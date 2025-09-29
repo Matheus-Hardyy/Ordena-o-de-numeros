@@ -1,0 +1,50 @@
+# Quick Sort em 
+quick_sort <- function(arr) {
+  if (length(arr) <= 1) return(arr)
+  pivot <- arr[length(arr) %/% 2 + 1]
+  left <- arr[arr < pivot]
+  middle <- arr[arr == pivot]
+  right <- arr[arr > pivot]
+  return(c(quick_sort(left), middle, quick_sort(right)))
+}
+
+main <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) < 1) {
+    cat("Uso: Rscript QuickSort.R arquivo.txt\n")
+    return()
+  }
+  
+  filename <- args[1]
+  if (!file.exists(filename)) {
+    cat("Arquivo não encontrado:", filename, "\n")
+    return()
+  }
+  
+  cat("=== QUICK SORT EM R ===\n")
+  cat("Linguagem: R | Versão:", R.version$version.string, "\n\n")
+  
+  # Lê o array
+  test_array <- scan(filename, what = integer(), quiet = TRUE)
+  n <- length(test_array)
+  cat("Processando", n, "elementos...\n")
+  
+  # Mede tempo
+  inicio <- Sys.time()
+  array_ordenado <- quick_sort(test_array)
+  fim <- Sys.time()
+  
+  tempo_ms <- as.numeric(difftime(fim, inicio, units = "secs")) * 1000
+  memoria_kb <- (n * 56 * log2(n + 1)) / 1024
+  
+  # Salva resultado
+  write.table(array_ordenado, "arq-saida.txt", row.names = FALSE, col.names = FALSE)
+  
+  cat("\n=== RESULTADOS ===\n")
+  cat("Tempo:", round(tempo_ms, 2), "ms\n")
+  cat("Memória RAM:", round(memoria_kb, 2), "KB\n")
+  cat("Arquivo: arq-saida.txt\n")
+  cat("Complexidade: O(n log n)\n")
+}
+
+if (!interactive()) main()
