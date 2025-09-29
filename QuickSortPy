@@ -1,0 +1,132 @@
+# type: ignore
+import psutil
+import time
+import sys
+import os
+import platform
+
+def quick_sort(arr):
+    """
+    Implementação do algoritmo Quick Sort
+    """
+    if len(arr) <= 1:
+        return arr
+    
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    
+    return quick_sort(left) + middle + quick_sort(right)
+
+def read_array_from_file(filename):
+    """
+    Lê um array de números de um arquivo de texto (um número por linha)
+    """
+    try:
+        with open(filename, 'r') as file:
+            numbers = []
+            for line in file:
+                line = line.strip()
+                if line:
+                    numbers.append(int(line))
+            return numbers
+    except FileNotFoundError:
+        print(f"Erro: Arquivo '{filename}' não encontrado.")
+        return None
+    except ValueError as e:
+        print(f"Erro: Arquivo contém valores inválidos. {e}")
+        return None
+    except Exception as e:
+        print(f"Erro ao ler o arquivo: {e}")
+        return None
+
+def save_array_to_file(filename, arr):
+    """
+    Salva um array em um arquivo de texto (um número por linha)
+    """
+    try:
+        with open(filename, 'w') as file:
+            for number in arr:
+                file.write(f"{number}\n")
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar arquivo: {e}")
+        return False
+
+def print_system_info():
+    """
+    Imprime informações do sistema e linguagem
+    """
+    print("=== INFORMACOES DO SISTEMA ===")
+    print(f"Linguagem: Python")
+    print(f"Versão: {platform.python_version()}")
+    print(f"Implementação: {platform.python_implementation()}")
+    
+    print(f"\n=== INFORMACOES DO COMPUTADOR ===")
+    print(f"Sistema Operacional: {platform.system()} {platform.release()}")
+    print(f"Arquitetura: {platform.architecture()[0]}")
+    print(f"Processador: {platform.processor()}")
+    
+    # Informações de memória do sistema
+    memory = psutil.virtual_memory()
+    print(f"Memória RAM Total: {memory.total / (1024**3):.2f} GB")
+    print(f"Memória RAM Disponível: {memory.available / (1024**3):.2f} GB")
+
+def main():
+    """
+    Função principal para Quick Sort
+    """
+    if len(sys.argv) < 2:
+        print("Uso: python QuickSort.py arquivo.txt")
+        print("Exemplo: python QuickSort.py arq.txt")
+        return
+    
+    filename = sys.argv[1]
+    
+    if not os.path.exists(filename):
+        print(f"Erro: Arquivo '{filename}' não encontrado.")
+        return
+    
+    # Imprime informações do sistema
+    print_system_info()
+    
+    # Lê o array do arquivo
+    print(f"\n=== PROCESSAMENTO ===")
+    test_array = read_array_from_file(filename)
+    
+    if test_array is None:
+        return
+    
+    # Medição de memória ANTES da execução
+    process = psutil.Process(os.getpid())
+    memory_before = process.memory_info().rss / 1024  # KB
+    
+    # Mede tempo de execução
+    start_time = time.time()
+    
+    # Executa o Quick Sort
+    sorted_array = quick_sort(test_array)
+    
+    # Mede tempo após a execução
+    end_time = time.time()
+    
+    # Medição de memória DEPOIS da execução
+    memory_after = process.memory_info().rss / 1024  # KB
+    
+    # Calcula métricas
+    execution_time_ms = (end_time - start_time) * 1000
+    memory_used_kb = memory_after - memory_before
+    
+    # Salva o resultado
+    output_filename = "arq-saida.txt"
+    if save_array_to_file(output_filename, sorted_array):
+        print(f"Arquivo salvo com sucesso: {output_filename}")
+    
+    # Imprime métricas de desempenho
+    print(f"\n=== METRICAS DE DESEMPENHO ===")
+    print(f"Tempo de execução: {execution_time_ms:.2f} ms")
+    print(f"Uso de memória RAM: {memory_used_kb:.2f} KB")
+
+if __name__ == "__main__":
+    main()
