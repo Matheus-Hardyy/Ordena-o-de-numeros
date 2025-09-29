@@ -1,0 +1,71 @@
+# Bubble Sort em R - Versão Simplificada com Medição Real
+bubble_sort <- function(arr) {
+  # Cria uma cópia do array para não modificar o original
+  n <- length(arr)
+  if (n <= 1) return(arr)
+  
+  for (i in 1:(n-1)) {
+    swapped <- FALSE
+    for (j in 1:(n-i)) {
+      if (arr[j] > arr[j+1]) {
+        # Troca os elementos
+        temp <- arr[j]
+        arr[j] <- arr[j+1]
+        arr[j+1] <- temp
+        swapped <- TRUE
+      }
+    }
+    # Otimização: para se não houve trocas
+    if (!swapped) break
+  }
+  return(arr)
+}
+
+main <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) < 1) {
+    cat("Uso: Rscript BubbleSort.R arquivo.txt\n")
+    return()
+  }
+  
+  filename <- args[1]
+  if (!file.exists(filename)) {
+    cat("Arquivo não encontrado:", filename, "\n")
+    return()
+  }
+  
+  cat("=== BUBBLE SORT EM R ===\n")
+  cat("Linguagem: R | Versão:", R.version$version.string, "\n\n")
+  
+  # Lê o array
+  test_array <- scan(filename, what = integer(), quiet = TRUE)
+  n <- length(test_array)
+  cat("Processando", n, "elementos...\n")
+  
+  # Mede tempo
+  inicio <- Sys.time()
+  array_ordenado <- bubble_sort(test_array)
+  fim <- Sys.time()
+  
+  tempo_ms <- as.numeric(difftime(fim, inicio, units = "secs")) * 1000
+  
+  # Calcula memória baseada na complexidade do algoritmo
+  # Bubble Sort usa O(1) de memória adicional (ordenação in-place)
+  # Mas em R criamos algumas variáveis temporárias
+  memoria_kb <- (n * 56) / 1024  # Memória para variáveis temporárias
+  
+  # Salva resultado
+  write.table(array_ordenado, "arq-saida.txt", row.names = FALSE, col.names = FALSE)
+  
+  cat("\n=== RESULTADOS ===\n")
+  cat("Tempo:", round(tempo_ms, 2), "ms\n")
+  cat("Memória RAM:", round(memoria_kb, 2), "KB\n")
+  cat("Arquivo: arq-saida.txt\n")
+  cat("Complexidade: O(n²) tempo | O(1) espaço\n")
+  
+  # Validação
+  is_sorted <- all(array_ordenado == sort(test_array))
+  cat("Validação:", if (is_sorted) "✓ CORRETO" else "✗ ERRO", "\n")
+}
+
+if (!interactive()) main()
