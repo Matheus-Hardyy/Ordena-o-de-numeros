@@ -1,0 +1,179 @@
+# type: ignore
+import time
+import sys
+import os
+import platform
+import gc
+import psutil
+import tracemalloc # Importa o módulo para rastreamento preciso de memória
+
+def bubble_sort(arr):
+    """
+    Implementação do algoritmo Bubble Sort.
+    Retorna uma nova lista ordenada.
+    """
+    n = len(arr)
+    # Cria uma cópia para não modificar o array original
+    arr_copy = arr.copy()
+    
+    # Loop principal para o Bubble Sort
+    for i in range(n):
+        # O último i elementos já estão no lugar
+        for j in range(0, n - i - 1):
+            # Compara e troca
+            if arr_copy[j] > arr_copy[j + 1]:
+                arr_copy[j], arr_copy[j + 1] = arr_copy[j + 1], arr_copy[j]
+    
+    return arr_copy
+
+def read_array_from_file(filename):
+    """
+    Lê um array de números de um arquivo de texto (um número por linha)
+    """
+    try:
+        with open(filename, 'r') as file:
+            numbers = []
+            for line in file:
+                line = line.strip()
+                if line:
+                    # Converte para inteiro. Levanta ValueError se o formato for inválido.
+                    numbers.append(int(line))
+            return numbers
+    except FileNotFoundError:
+        print(f"Erro: Arquivo '{filename}' não encontrado.")
+        return None
+    except ValueError as e:
+        print(f"Erro: Arquivo contém valores inválidos. {e}")
+        return None
+    except Exception as e:
+        print(f"Erro ao ler o arquivo: {e}")
+        return None
+
+def save_array_to_file(filename, arr):
+    """
+    Salva um array em um arquivo de texto (um número por linha)
+    """
+    try:
+        with open(filename, 'w') as file:
+            for number in arr:
+                file.write(f"{number}\n")
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar arquivo: {e}")
+        return False
+
+def print_system_info():
+    """
+    Imprime informações do sistema e linguagem.
+    """
+    print("=== INFORMACOES DO SISTEMA ===")
+    print(f"Linguagem: Python")
+    print(f"Versão: {platform.python_version()}")
+    print(f"Implementação: {platform.python_implementation()}")
+    
+    print(f"\n=== INFORMACOES DO COMPUTADOR ===")
+    print(f"Sistema Operacional: {platform.system()} {platform.release()}")
+    print(f"Arquitetura: {platform.architecture()[0]}")
+    print(f"Processador: {platform.processor()}")
+    
+    # Informações de memória do sistema
+    try:
+        memory = psutil.virtual_memory()
+        print(f"Memória RAM Total: {memory.total / (1024**3):.2f} GB")
+        print(f"Memória RAM Disponível: {memory.available / (1024**3):.2f} GB")
+    except Exception:
+        print("Não foi possível obter informações detalhadas da RAM (psutil).")
+
+# A função get_memory_usage foi removida, pois usaremos tracemalloc para precisão.
+
+def main():
+    """
+    Função principal para execução do Bubble Sort e medição de desempenho.
+    """
+    # 1. Checagem de argumentos de linha de comando
+    if len(sys.argv) < 2:
+        print("Uso: python BubbleSortPerformance.py arquivo.txt")
+        print("Exemplo: python BubbleSortPerformance.py dados.txt")
+        return
+    
+    filename = sys.argv[1]
+    
+    if not os.path.exists(filename):
+        print(f"Erro: Arquivo '{filename}' não encontrado.")
+        return
+    
+    # 2. Imprime informações do sistema
+    print_system_info()
+    
+    # 3. Leitura do array
+    print(f"\n=== PROCESSAMENTO ===")
+    test_array = read_array_from_file(filename)
+    
+    if test_array is None:
+        return
+    
+    print(f"Array lido com {len(test_array)} elementos")
+    
+    # Estimativa de memória (apenas teórica para comparação)
+    print(f"Tamanho estimado do array em memória: {(sys.getsizeof(test_array) + len(test_array) * sys.getsizeof(0)) / 1024:.2f} KB (Apenas estimativa)")
+    
+    # 4. Medição de Desempenho
+    
+    # Libera memória não referenciada para medição mais limpa
+    gc.collect() 
+    
+    # INÍCIO DA MEDIÇÃO PRECISA DE MEMÓRIA (tracemalloc)
+    tracemalloc.start()
+    
+    # Mede tempo de execução (perf_counter é mais preciso)
+    start_time = time.perf_counter()
+    
+    # Executa o Bubble Sort
+    print("Executando Bubble Sort...")
+    sorted_array = bubble_sort(test_array)
+    
+    # Mede tempo após a execução
+    end_time = time.perf_counter()
+    
+    # Pega o uso de memória alocado pela execução (bytes)
+    # current_memory: Memória que o script alocou e ainda está ativa
+    # peak_memory: O máximo de memória que o script usou durante o tracemalloc.start()
+    current_memory_bytes, peak_memory_bytes = tracemalloc.get_traced_memory()
+    tracemalloc.stop() # FIM DA MEDIÇÃO
+    
+    # Converte para KB
+    peak_memory_kb = peak_memory_bytes / 1024.0
+    
+    # 5. Saída de Arquivo
+    input_name = os.path.splitext(filename)[0]
+    output_filename = f"{input_name}-saida.txt"
+    
+    print(f"Salvando arquivo de saída...")
+    if save_array_to_file(output_filename, sorted_array):
+        print(f"✓ Arquivo salvo com sucesso: {output_filename}")
+    else:
+        print(f"✗ Erro ao salvar arquivo: {output_filename}")
+        return
+    
+    # 6. Resultados e Métricas
+    execution_time_ms = (end_time - start_time) * 1000
+    
+    # Imprime métricas de desempenho
+    print(f"\n=== METRICAS DE DESEMPENHO ===")
+    print(f"Tempo de execução (ms): {execution_time_ms:.6f} ms")
+    print(f"Tempo de execução (segundos): {execution_time_ms/1000:.6f} s")
+    
+    # Imprime as métricas de memória do tracemalloc
+    print(f"\n=== USO DE MEMÓRIA RAM (OBJETOS PYTHON) ===")
+    print(f"Memória Pico Alocada (tracemalloc): {peak_memory_kb:.2f} KB")
+    print(f"Memória Pico Alocada (tracemalloc): {peak_memory_kb/1024:.2f} MB")
+    print(f"Memória Alocada Atualmente (tracemalloc): {current_memory_bytes/1024:.2f} KB")
+    
+    # 7. Validação
+    # Verifica se o array está ordenado (verifica se cada elemento é menor ou igual ao próximo)
+    is_sorted = all(sorted_array[i] <= sorted_array[i+1] for i in range(len(sorted_array)-1))
+    print(f"\n=== VALIDAÇÃO ===")
+    print(f"Array ordenado corretamente: {'✓ SIM' if is_sorted else '✗ NÃO'}")
+
+if __name__ == "__main__":
+    main()
